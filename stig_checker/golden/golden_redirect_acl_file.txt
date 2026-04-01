@@ -1,0 +1,8 @@
+ip access-list extended REDIRECT
+deny ip any host 192.16.5.1
+permit tcp any host 72.163.1.80 eq www
+permit tcp any host 72.163.1.80 eq 443
+permit tcp any host 72.163.1.80 eq 8443
+permit 123.456.789.123
+deny udp any any eq domain
+deny udp any eq bootpc any eq bootps

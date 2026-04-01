@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <title>SPECTER</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- Link to Bootstrap CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='bootstrap.css') }}">
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+</head>
+<body>
+
+    <header class="p-3 mb-3 border-bottom">
+        <div class="d-flex flex-wrap align-items-center justify-content-center justify-content-lg-start">
+            <!-- Logo on the left -->
+            <a href="https://apps.netdevops.test.com" class="d-flex align-items-center mb-2 mb-lg-0 text-white text-decoration-none">
+                <img src='../static/specter.png' alt='SPECTER' width="auto" height="85">
+            </a>
+
+            <h1 class="col-lg-auto ms-auto">SPECTER</h1>
+            <ul class="nav col-12 col-lg-auto ms-auto mb-2 justify-content-center mb-md-0">
+                <li><a href="https://netdevops.test.com" class="nav-link px-2 fw-bold fs-5">HOME</a></li>
+                <li><a href="https://netdevops.test.com/software.html" class="nav-link px-2 fw-bold fs-5">SOFTWARE</a></li>
+                <li><a href="https://netdevops.test.com/certificates.html" class="nav-link px-2 fw-bold fs-5">CERTIFICATES</a></li>
+                <li><a href="https://apps.netdevops.test.com" class="nav-link px-2 fw-bold fs-5">STIG CHECKER</a></li>
+                <li><a href="https://enterprise.netdevops.test.com" class="nav-link px-2 fw-bold fs-5">ENT-N HUB</a></li>
+            </ul>
+        </div>
+    </header> 
+
+    <div class="container">
+        <div class="text-center">
+            <p class="lead text-muted"><b>S</b>ecurity <b>P</b>olicy <b>E</b>valuation and <b>C</b>ompliance <b>T</b>ool for <b>E</b>nforcement and <b>R</b>eview</p>
+            <p>Use this site to check if a Cisco network device is STIG compliant.<br><small>Note: Devices on-boarded with Catalyst Center may report false negatives for VTP and AAA.</small></p>
+        </div>
+
+        <form action="/submit" method="post" class="mt-4">
+            <div class="row justify-content-center">
+                <div class="col-lg-8">
+
+                    <!-- Device IP Address -->
+                    <div class="card bg-body-tertiary mb-4">
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label for="ip_addrs" class="form-label fs-5">1. Device IP Address</label>
+                                <input type="text" class="form-control" id="ip_addrs" name="ip_addrs" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Authentication -->
+                    <div class="card bg-body-tertiary mb-4">
+                        <div class="card-body">
+                            <p class="fs-5">2. Authentication Method</p>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" id="tacacs_yes" name="on_tacacs" value="yes" onchange="toggleLoginFields()" required>
+                                <label class="form-check-label" for="tacacs_yes">TACACS Credentials</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" id="tacacs_no" name="on_tacacs" value="no" onchange="toggleLoginFields()">
+                                <label class="form-check-label" for="tacacs_no">Local Device Credentials</label>
+                            </div>
+                            <!-- Conditional Fields -->
+                            <div id="tacacs_fields" class="mt-3 d-none">
+                                <div class="mb-2">
+                                    <label for="tacacs_username" class="form-label">TACACS Username</label>
+                                    <input type="text" class="form-control" id="tacacs_username" name="tacacs_username">
+                                </div>
+                                <div>
+                                    <label for="tacacs_password" class="form-label">TACACS Password</label>
+                                    <input type="password" class="form-control" id="tacacs_password" name="tacacs_password">
+                                </div>
+                            </div>
+                            <div id="local_fields" class="mt-3 d-none">
+                                <div class="mb-2">
+                                    <label for="username" class="form-label">Local Username</label>
+                                    <input type="text" class="form-control" id="username" name="username">
+                                </div>
+                                <div class="mb-2">
+                                    <label for="password" class="form-label">Local Password</label>
+                                    <input type="password" class="form-control" id="password" name="password">
+                                </div>
+                                <div>
+                                    <label for="en_secret" class="form-label">Enable Secret</label>
+                                    <input type="password" class="form-control" id="en_secret" name="en_secret">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Enclave & Device Type -->
+                    <div class="card bg-body-tertiary mb-4">
+                        <div class="card-body">
+                            <p class="fs-5">3. Enclave & Device Type</p>
+                            <!-- Enclave Selection -->
+                            <div class="mb-3">
+                                <p class="mb-1">Select Enclave:</p>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" id="flavor_selected" name="enclave" value="nipr" onchange="toggleEnclaveSelection()" required>
+                                    <label class="form-check-label" for="flavor_selected">NIPR</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" id="transport_selected" name="enclave" value="transport" onchange="toggleEnclaveSelection()">
+                                    <label class="form-check-label" for="transport_selected">Transport</label>
+                                </div>
+                            </div>
+
+                            <!-- Conditional Device Type -->
+                            <div id="flavor_fields" class="d-none">
+                                <p class="mb-1">Select NIPR Device Type:</p>
+                                <div class="form-check"><input class="form-check-input" type="radio" id="flavor_rtr" name="flavor_device_type" value="router"><label class="form-check-label" for="flavor_rtr">Router</label></div>
+                                <div class="form-check"><input class="form-check-input" type="radio" id="flavor_sw" name="flavor_device_type" value="switch"><label class="form-check-label" for="flavor_sw">Switch</label></div>
+                                <div class="form-check"><input class="form-check-input" type="radio" id="flavor_img_sw" name="flavor_device_type" value="imaging_switch"><label class="form-check-label" for="flavor_img_sw">Imaging Switch</label></div>
+                            </div>
+                            <div id="transport_fields" class="d-none">
+                                <p class="mb-1">Select Transport Device Type:</p>
+                                <div class="form-check"><input class="form-check-input" type="radio" id="transport_rtr" name="transport_device_type" value="router"><label class="form-check-label" for="transport_rtr">Router</label></div>
+                                <div class="form-check"><input class="form-check-input" type="radio" id="transport_sw" name="transport_device_type" value="switch"><label class="form-check-label" for="transport_sw">Switch</label></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div class="d-grid mt-4">
+                        <button type="submit" class="btn btn-primary btn-lg">Check STIG Compliance</button>
+                    </div>
+
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <footer class="footer mt-auto py-3 bg-dark mt-5">
+        <div class="container text-center">
+            <span class="text-muted">&copy; 2026 SPECTER. All rights reserved.</span>
+        </div>
+    </footer>
+
+    <!-- SCRIPT SECTION -->
+    <script>
+        function toggleLoginFields() {
+            var tacacsYes = document.getElementById('tacacs_yes');
+            var tacacsFields = document.getElementById('tacacs_fields');
+            var localFields = document.getElementById('local_fields');
+            var tacacsUser = document.getElementById('tacacs_username');
+            var tacacsPass = document.getElementById('tacacs_password');
+            var localUser = document.getElementById('username');
+            var localPass = document.getElementById('password');
+            var enableSecret = document.getElementById('en_secret');
+
+            if (tacacsYes.checked) {
+                tacacsFields.classList.remove('d-none');
+                localFields.classList.add('d-none');
+                tacacsUser.required = true;
+                tacacsPass.required = true;
+                localUser.required = false;
+                localPass.required = false;
+                enableSecret.required = false;
+            } else {
+                tacacsFields.classList.add('d-none');
+                localFields.classList.remove('d-none');
+                tacacsUser.required = false;
+                tacacsPass.required = false;
+                localUser.required = true;
+                localPass.required = true;
+                enableSecret.required = true;
+            }
+        }
+
+        function toggleEnclaveSelection() {
+            var niprSelected = document.getElementById('flavor_selected');
+            var niprFields = document.getElementById('flavor_fields');
+            var transportFields = document.getElementById('transport_fields');
+            var niprRTR = document.getElementById('flavor_rtr');
+            var transportRTR = document.getElementById('transport_rtr');
+
+            if (niprSelected.checked) {
+                niprFields.classList.remove('d-none');
+                transportFields.classList.add('d-none');
+                niprRTR.required = true;
+                transportRTR.required = false;
+            } else { // Transport is selected
+                niprFields.classList.add('d-none');
+                transportFields.classList.remove('d-none');
+                niprRTR.required = false;
+                transportRTR.required = true;
+            }
+        }
+    </script>
+</body>
+</html>

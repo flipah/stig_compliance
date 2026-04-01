@@ -1,0 +1,15 @@
+do show run 
+do show run | sec ip access-list
+do show snmp user
+do show ip ssh
+do show run | inc radius source
+do show run all | inc ssh
+do show run all | sec archive
+do show run all | sec logging
+do show run all | inc no service
+do show run all | inc no ip bootp server
+do show run all | inc no ip finger
+do show run all | inc no ip source-route
+do show run all | inc login authentication default
+do show run all | inc notification mac-move
+do show run | sec ntp

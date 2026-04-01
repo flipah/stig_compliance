@@ -1,0 +1,5 @@
+ip access-list standard 55
+Standard IP access list 55
+permit 172.30.255.0 0.0.0.255 log
+permit 172.30.224.237 log
+deny   any log

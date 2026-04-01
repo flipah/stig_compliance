@@ -1,0 +1,12 @@
+ip access-list standard 2
+Standard IP access list 2
+permit 172.30.232.249
+permit 172.30.232.250
+permit 172.30.232.244
+permit 172.30.224.124
+permit 172.30.224.125 
+permit 172.30.232.230
+permit 172.30.225.168
+permit 172.30.225.169
+permit 172.30.225.170
+deny   any log
