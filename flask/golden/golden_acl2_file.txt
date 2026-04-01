@@ -1,4 +1,0 @@
-ip access-list standard 2
-Standard IP access list 2
-permit 192.11.22.1
-deny   any log

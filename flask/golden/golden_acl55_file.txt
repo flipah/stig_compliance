@@ -1,4 +1,0 @@
-ip access-list standard 55
-Standard IP access list 55
-permit 192.168.1.1 log
-deny   any log

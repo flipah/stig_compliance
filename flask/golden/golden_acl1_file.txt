@@ -1,4 +1,0 @@
-ip access-list standard 1
-Standard IP access list 1
-permit 192.167.10.3
-deny   any log
