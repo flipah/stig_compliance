@@ -1,106 +1,111 @@
-# Network_automation
+# STIG Compliance (SPECTER)
 
 ## Overview
 
-**Network_automation** is a Python project for automating the assessment and enforcement of security compliance on Cisco IOS network devices. It enables both command-line and web-based (Flask) workflows to check device configurations and Access Control Lists (ACLs) against pre-defined "golden" STIG (Security Technical Implementation Guide) baselines.
+**SPECTER** (**S**ecurity **P**olicy **E**valuation and **C**ompliance **T**ool for **E**nforcement and **R**eview) is a Python/Flask web application for automating STIG (Security Technical Implementation Guide) compliance assessments on Cisco IOS network devices. It connects to devices over SSH, compares their running configurations and ACLs against golden baselines, and presents a structured compliance report.
 
 ## Features
 
-- **Automated STIG Compliance Checks:** Connects to Cisco devices, applies configuration commands, and checks for compliance with STIGs.
-- **ACL Validation:** Compares device ACLs (1, 2, 5, 55) to golden templates.
-- **Bulk Configuration:** Reads and applies batches of configuration commands from files.
-- **Web Interface (SPECTOR):** User-friendly browser-based tool for compliance checks with distinct input and output pages.
-- **Comprehensive Error Handling:** Handles authentication, SSH, and device connection errors gracefully.
-- **Clear Reporting:** Lists missing configuration/ACL lines and compliance status per device.
+- **Web Interface:** Bootstrap-styled browser UI for entering device credentials and viewing results.
+- **Multi-Enclave Support:** Separate compliance checks for NIPR (routers, switches, imaging switches) and Transport enclaves.
+- **Automated STIG Compliance Checks:** Validates running device configs against section-based JSON golden templates.
+- **ACL Validation:** Compares device ACLs (1, 2, 5, 55, and REDIRECT) against golden ACL text files.
+- **Interface Validation:** Checks switchport and interface configurations against a golden interface JSON template (switch only).
+- **TACACS & Local Auth:** Supports both TACACS and local device credentials from the web form.
+- **Comprehensive Error Handling:** Gracefully handles SSH timeouts, authentication failures, and missing golden files.
+- **Accordion Results View:** Per-device compliance results displayed in collapsible accordion sections.
 
 ## Directory Structure
 
 ```
 stig_compliance/
 │
-├── flask/
-│   ├── stig_check_flask.py               # Flask web app for compliance checks
-│   ├── wsgi.py                           # What the gunicorn runs
-│   │── templates/
-│   │   ├── index.html                    # Web UI: input form for device info (NEW/RENAMED)
-│   │   ├── specter_post.html             # Web UI: output/results page (NEW)
-│   │   └── spector_style.css             # Stylesheet for the web interface
-│   │── static/
-│   │   ├── socom specter.png             # The image used that goes in the navigation menue
-│   │   └── specter_style.css             # the CSS file for formating the HTML page
+├── stig_checker/
+│   ├── stig_check_flask.py               # Flask web app — main application logic
+│   ├── templates/
+│   │   ├── index.html                    # Web UI: input form (device IPs, credentials, enclave/device type)
+│   │   └── specter_post.html             # Web UI: compliance results output page
+│   ├── static/
+│   │   ├── specter.png                   # SPECTER logo used in the navigation bar
+│   │   ├── bootstrap.css                 # Bootstrap CSS for styling
+│   │   └── bootstrap.bundle.js           # Bootstrap JS bundle
 │   └── golden/
-│       ├── bulk_config_file.txt          # Bulk config commands to push to devices
-│       ├── golden_stig_file.txt          # Golden STIG config template
+│       ├── bulk_config_file.txt          # "show" commands sent to devices before config retrieval
+│       ├── golden_config_rtr.json        # Section-based golden STIG config for NIPR routers
+│       ├── golden_config_sw.json         # Section-based golden STIG config for NIPR switches
+│       ├── golden_interfaces.json        # Golden interface/switchport config template (switches)
 │       ├── golden_acl1_file.txt          # Golden ACL 1 template
 │       ├── golden_acl2_file.txt          # Golden ACL 2 template
 │       ├── golden_acl5_file.txt          # Golden ACL 5 template
 │       ├── golden_acl55_file.txt         # Golden ACL 55 template
-│       └── golden_stig_file.txt          # All other configs that gets compared against
-└── README.md                             # (This file)
+│       └── golden_redirect_acl_file.txt  # Golden REDIRECT ACL template (switches only)
+├── requirements.txt                      # Python dependencies
+└── README.md                             # This file
 ```
 
 ## How It Works
 
-### 1. CLI Compliance Checker (`stig_check.py`)
-- Prompts for device IPs, credentials, and enable secret.
-- Reads golden configuration/ACL templates and bulk configs from the `golden/` directory.
-- For each device:
-    - Connects via SSH using Netmiko.
-    - Sends configuration commands.
-    - Retrieves and compares running configs and ACLs to golden templates.
-    - Reports missing lines and compliance status.
+### 1. Web Form (`index.html` → `/submit`)
+The home page presents a form where users provide:
+- One or more device IP addresses
+- Authentication method: **TACACS** (username + password) or **Local** (username, password, enable secret)
+- **Enclave** selection: NIPR or Transport
+- **Device type**: Router, Switch, or Imaging Switch (NIPR); Router or Switch (Transport)
 
-### 2. Web Interface (SPECTOR) with Input and Output Pages
-- **Input Page:**  
-  - `spector_pre.html` presents a web form for device info (IP addresses, credentials).
-- **Result Page:**  
-  - `specter_post.html` displays the compliance check results after submission.
-- Styling is provided by `spector_style.css`.
-- Flask app logic is in `stig_check_flask.py`:
-    - Loads golden configs, connects to devices, checks compliance.
-    - Renders the correct template for each step.
+### 2. Compliance Check (`stig_check_flask.py`)
+On form submission the Flask app:
+1. Connects to each device via SSH using **Netmiko**.
+2. Sends the commands listed in `bulk_config_file.txt` to retrieve running config, ACL output, and (for switches) interface/switchport info.
+3. Validates the running config against the relevant JSON golden file:
+   - **Routers** → `golden_config_rtr.json` (sections 2.1, 2.2, 3.1–3.10, 4.1.3, 4.1.4, 7)
+   - **Switches** → `golden_config_sw.json`
+4. Validates each ACL against its corresponding golden text file.
+5. For switches, additionally validates interface configurations against `golden_interfaces.json`.
+6. Aggregates per-device results and renders `specter_post.html` with an accordion-style report.
 
 ### 3. Golden Configuration Files (`golden/`)
-- **bulk_config_file.txt**: List of config commands to push
-- **golden_stig_file.txt**: Golden baseline for STIG compliance
-- **golden_acl{N}_file.txt**: Golden templates for ACLs 1, 2, 5, 55
+| File | Purpose |
+|------|---------|
+| `bulk_config_file.txt` | List of `show` commands sent to the device |
+| `golden_config_rtr.json` | STIG config sections for NIPR routers |
+| `golden_config_sw.json` | STIG config sections for NIPR switches |
+| `golden_interfaces.json` | Expected interface/switchport settings |
+| `golden_acl{N}_file.txt` | Expected lines for standard ACLs 1, 2, 5, 55 |
+| `golden_redirect_acl_file.txt` | Expected lines for the REDIRECT ACL (switches) |
 
-## Example Workflows
+## Dependencies
 
-### CLI
-1. Run `python stig_check.py`
-2. Enter device IPs, credentials, and enable secret
-3. Script connects to each device, pushes configs, and checks compliance
-4. Missing lines and final compliance status are printed to console
+Install Python dependencies with:
 
-### Web (SPECTOR)
-1. Run `python flask/stig_check_flask.py`
-2. Open browser to provided URL (usually `localhost:5000`)
-3. Enter device info in **spector_pre.html** form and submit
-4. View compliance results on **specter_post.html**
+```bash
+pip install -r requirements.txt
+```
 
-## Key Files
+Key packages: `Flask`, `Netmiko`, `Paramiko`, `ntc_templates`, `textfsm`
 
-- **stig_check.py**: Main CLI script for device compliance checks.
-- **flask/stig_check_flask.py**: Flask web app with compliance checking logic.
-- **golden/**: Directory for golden config and ACL templates.
-- **flask/templates/spector_pre.html**: Input page for the web UI (NEW/RENAMED).
-- **flask/templates/specter_post.html**: Results/output page for the web UI (NEW).
-- **flask/templates/spector_style.css**: CSS for the web interface.
+## Running the Application
+
+```bash
+cd stig_checker
+python stig_check_flask.py
+```
+
+Then open a browser to `http://localhost:5000`.
 
 ## Error Handling
 
-Both CLI and web implementations robustly handle:
-- SSH connection errors (timeouts, authentication)
-- File reading errors (missing configuration files)
-- Device communication errors (e.g., SSH disabled)
-- All errors are logged or displayed clearly to the user.
+The application handles:
+- SSH connection timeouts and authentication failures (per device, without stopping the batch)
+- Missing golden configuration files (logs a warning and continues)
+- Device communication errors (e.g., SSH not enabled on device)
+
+All errors are captured per device and surfaced in the results page.
 
 ## Extending the Project
 
-- To check additional device types, expand the `ios_device` dictionary and add relevant golden configs.
-- Update golden config files as needed to keep up with evolving standards.
-- Enhance the web UI or reporting for more detailed compliance feedback.
+- Add new STIG sections by updating `golden_config_rtr.json` or `golden_config_sw.json`.
+- Add new ACL checks by adding a golden ACL text file and referencing it in `open_golden_files()`.
+- Support additional device types or enclaves by extending `get_form_input()` and adding corresponding validation functions.
 
 ## License
 
